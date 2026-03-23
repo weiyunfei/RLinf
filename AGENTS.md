@@ -138,3 +138,55 @@ Google Python style; Ruff for lint/format; docstrings and type hints on public A
 - Tutorials: [placement / cluster / YAML](https://rlinf.readthedocs.io/en/latest/rst_source/tutorials/user/index.html), [hybrid / disaggregated](https://rlinf.readthedocs.io/en/latest/rst_source/tutorials/mode/index.html), [heterogeneous cluster](https://rlinf.readthedocs.io/en/latest/rst_source/tutorials/advance/hetero.html), [extend (new env/model)](https://rlinf.readthedocs.io/en/latest/rst_source/tutorials/extend/index.html), [RL algorithms](https://rlinf.readthedocs.io/en/latest/rst_source/tutorials/rlalg/index.html), [logger (metrics)](https://rlinf.readthedocs.io/en/latest/rst_source/tutorials/advance/logger.html), [checkpoint resume](https://rlinf.readthedocs.io/en/latest/rst_source/tutorials/advance/resume.html)
 - Evaluation: [VLA evaluation](https://rlinf.readthedocs.io/en/latest/rst_source/start/vla-eval.html) · [LLM evaluation](https://rlinf.readthedocs.io/en/latest/rst_source/start/llm-eval.html)
 - [APIs](https://rlinf.readthedocs.io/en/latest/rst_source/apis/index.html) (actor, channel, cluster, placement, worker, env, data, …) · [FAQ](https://rlinf.readthedocs.io/en/latest/rst_source/faq.html)
+
+---
+
+## Cursor Cloud specific instructions
+
+### Environment overview
+
+RLinf uses **uv** with **Python 3.11** (`.venv` at repo root). The update script handles venv creation and `uv sync`. After it runs, activate with `source .venv/bin/activate`.
+
+### Extra pip packages needed beyond `uv sync`
+
+`uv sync --no-install-project` installs core deps but not `regex` or `transformers`. Both are needed at import/test time:
+
+- `regex` -- required by `rlinf.algorithms.toolcall_parsers` (imported eagerly from `rlinf.algorithms.__init__`).
+- `transformers` -- required by `rlinf.data.datasets` and several worker modules. Needed to run `pytest tests/unit_tests/`.
+
+The update script installs these automatically.
+
+### Lint
+
+```
+source .venv/bin/activate
+pre-commit run --all-files
+```
+
+Ruff lint + format are the only code-quality hooks. The `check-branch` hook enforces branch naming (`feature/`, `bugfix/`, etc.) and will fail on Cursor cloud agent branches -- this is expected and not a code issue.
+
+### Unit tests
+
+```
+source .venv/bin/activate
+python -m pytest tests/unit_tests/ -v \
+  --ignore=tests/unit_tests/test_channel.py \
+  --ignore=tests/unit_tests/test_comm.py \
+  --ignore=tests/unit_tests/test_intra_gpu_comm.py \
+  --ignore=tests/unit_tests/test_worker.py \
+  --ignore=tests/unit_tests/test_comm_mapper.py \
+  --ignore=tests/unit_tests/bench_channel.py \
+  --ignore=tests/unit_tests/test_distributed_ray_log_collector.py
+```
+
+The ignored tests require Ray shared-memory IPC and/or GPU; they segfault in the cloud VM (no GPU, limited `/dev/shm`). All other unit tests (placement, cluster config, auto-placement, math dataset) pass on CPU.
+
+### E2E tests
+
+E2E tests (`tests/e2e_tests/`) require GPUs and specific model/env installs (see `requirements/install.sh`). They cannot run in the cloud VM.
+
+### Key gotchas
+
+- `pre-commit install --hook-type commit-msg` may fail if `core.hooksPath` is set. Run `git config --unset-all core.hooksPath` first.
+- The `pyproject.toml` declares `--no-install-project` as the default in `uv sync` invocations in `install.sh`. For dev work in the repo, `PYTHONPATH=/workspace` or running from the repo root is sufficient; the package does not need to be pip-installed.
+- Commits must be signed off (`git commit -s`) and follow [Conventional Commits](https://www.conventionalcommits.org/) format per `CONTRIBUTING.md`.
