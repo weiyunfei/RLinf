@@ -33,9 +33,9 @@ from rlinf.scheduler import WorkerInfo
 
 class RealWorldEnv(gym.Env):
     def __init__(self, cfg, num_envs, seed_offset, total_num_processes, worker_info):
-        assert num_envs == 1, (
-            f"Currently, only 1 realworld env can be started per worker, but {num_envs=} is received."
-        )
+        assert (
+            num_envs == 1
+        ), f"Currently, only 1 realworld env can be started per worker, but {num_envs=} is received."
 
         self.cfg = cfg
         self.override_cfg = OmegaConf.to_container(
@@ -108,7 +108,9 @@ class RealWorldEnv(gym.Env):
             for env_idx in range(self.num_envs)
         ]
         self.env = NoAutoResetSyncVectorEnv(env_fns)
-        self.task_descriptions = list(self.env.call("task_description"))
+        self.task_descriptions = list(
+            self.env.call("get_wrapper_attr", "task_description")
+        )
 
     @property
     def action_space(self):
@@ -355,9 +357,11 @@ class RealWorldEnv(gym.Env):
         final_info = copy.deepcopy(infos)
         obs, infos = self.reset(
             env_idx=env_idx,
-            reset_state_ids=self.reset_state_ids[env_idx]
-            if self.use_fixed_reset_state_ids
-            else None,
+            reset_state_ids=(
+                self.reset_state_ids[env_idx]
+                if self.use_fixed_reset_state_ids
+                else None
+            ),
         )
         # gymnasium calls it final observation but it really is just o_{t+1} or the true next observation
         infos["final_observation"] = final_obs
