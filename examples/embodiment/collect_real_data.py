@@ -44,6 +44,8 @@ class DataCollector(Worker):
             worker_info=self.worker_info,
         )
 
+        self.action_dim = self.env.env.single_action_space.shape[0]
+
         if self.cfg.env.eval.get("data_collection", None) and getattr(
             self.cfg.env.eval.data_collection, "enabled", False
         ):
@@ -154,13 +156,22 @@ class DataCollector(Worker):
                 if isinstance(r_val, torch.Tensor):
                     r_val = r_val.item()
 
+                manual_done = False
+                if "manual_done" in info:
+                    md = info["manual_done"]
+                    if hasattr(md, "__getitem__") and len(md) > 0:
+                        manual_done = bool(md[0])
+                    else:
+                        manual_done = bool(md)
+
                 self.total_cnt += 1
 
-                if r_val >= 0.5:
+                if r_val >= 0.5 or manual_done:
                     success_cnt += 1
 
                     self.log_info(
-                        f"Success: {r_val}. Total: {success_cnt}/{self.num_data_episodes}"
+                        f"Success (reward={r_val}, manual_done={manual_done}). "
+                        f"Total: {success_cnt}/{self.num_data_episodes}"
                     )
 
                     trajectory = current_rollout.to_trajectory()
