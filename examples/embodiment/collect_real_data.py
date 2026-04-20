@@ -47,8 +47,6 @@ class DataCollector(Worker):
             worker_info=self.worker_info,
         )
 
-        self.action_dim = self.env.env.single_action_space.shape[0]
-
         if self.cfg.env.eval.get("data_collection", None) and getattr(
             self.cfg.env.eval.data_collection, "enabled", False
         ):
