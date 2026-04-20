@@ -689,6 +689,7 @@ install_env_only() {
         embodichain)
             install_common_embodied_deps
             install_embodichain_env
+            ;;
         dosw1)
             install_dosw1_env
             ;;
