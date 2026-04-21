@@ -135,10 +135,9 @@ class DOSW1Env(gym.Env):
             self.node_rank = worker_info.cluster_node_rank
             self.env_worker_rank = worker_info.rank
 
-        self._apply_hardware_info(hardware_info)
-
         self.sdk: DOSW1SDKAdapter | None = None
         if not config.is_dummy:
+            self._apply_hardware_info(hardware_info)
             self.sdk = DOSW1SDKAdapter(config)
             self.sdk.connect()
             self._go_to_home()
