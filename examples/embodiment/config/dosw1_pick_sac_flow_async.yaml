@@ -29,6 +29,19 @@ cluster:
       node_ranks: 0
     - label: dosw1
       node_ranks: 1
+      hardware:
+        type: DOSW1
+        configs:
+          - robot_url: "127.0.0.1"             # Replace with DOS-W1 gRPC address
+            left_arm_port: 50051
+            right_arm_port: 50053
+            left_lead_port: 50050
+            right_lead_port: 50052
+            camera_serials:                    # Replace with your RealSense serial numbers
+              - "419622072872"
+              - "243722075219"
+              - "244222070702"
+            node_rank: 1
 
 runner:
   task_type: embodied
@@ -117,13 +130,6 @@ env:
     total_num_envs: 1
     override_cfg:
       is_dummy: False
-      robot_url: "127.0.0.1"             # Replace with DOS-W1 gRPC address
-      left_arm_port: 50051
-      right_arm_port: 50053
-      camera_serials:                   # Replace with your RealSense serial numbers
-        - "419622072872"
-        - "243722075219"
-        - "244222070702"
       use_dense_reward: True
       target_grasp_joint: [-0.4724574685096741, -1.1331731081008911, 0.6509880423545837, 1.408216953277588, -0.5987258553504944, -1.0904479026794434]   # Calibrate for your setup
       target_lift_joint: [-0.5140383243560791, -0.9435797929763794, 0.6078813076019287, 1.3971542119979858, -0.6315327882766724, -1.1175326108932495]   # Calibrate for your setup

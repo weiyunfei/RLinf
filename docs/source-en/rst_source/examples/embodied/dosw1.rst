@@ -80,8 +80,9 @@ Hardware Setup
 
 - **Robot**: DOS-W1 dual-arm with leader arms (used for teleoperation).
 - **Cameras**: Up to three Intel RealSense cameras (serial numbers fed into
-  ``override_cfg.camera_serials``). The code also works with 1 camera if you
-  set ``image_num: 1`` and only list one serial.
+  ``cluster.node_groups[<dosw1>].hardware.configs[*].camera_serials``).
+  The code also works with 1 camera if you set ``image_num: 1`` and only
+  list one serial.
 - **Training / Rollout Node**: A machine with at least one CUDA GPU
   (RTX 4090 or better recommended).
 - **Robot Controller Node**: The DOS-W1 itself (or a small PC in the same
@@ -285,19 +286,27 @@ Fields that you should update for your setup:
          node_ranks: 0
        - label: dosw1
          node_ranks: 1
+         # Robot connection info (gRPC URL / ports / camera serials) is
+         # managed by the scheduler, not the env config.
+         hardware:
+           type: DOSW1
+           configs:
+             - robot_url: "<ROBOT_IP>"            # DOS-W1 gRPC address
+               left_arm_port: 50051
+               right_arm_port: 50053
+               left_lead_port: 50050
+               right_lead_port: 50052
+               camera_serials:                    # RealSense serial numbers
+                 - "<SERIAL_1>"
+                 - "<SERIAL_2>"
+                 - "<SERIAL_3>"
+               node_rank: 1
 
    env:
      train:
        keyboard_intervention_wrapper: True
        override_cfg:
          is_dummy: False
-         robot_url: "<ROBOT_IP>"                 # DOS-W1 gRPC address
-         left_arm_port: 50051
-         right_arm_port: 50053
-         camera_serials:                          # RealSense serial numbers
-           - "<SERIAL_1>"
-           - "<SERIAL_2>"
-           - "<SERIAL_3>"
          use_dense_reward: True
          target_grasp_joint: [...]                # from calibration above
          target_lift_joint:  [...]                # from calibration above
@@ -391,11 +400,12 @@ On the robot node:
 
    source .venv/bin/activate
 
-   bash examples/embodiment/collect_dosw1_data.sh dosw1_collect_data
+   bash examples/embodiment/collect_data.sh dosw1_collect_data
 
-Edit the ``robot_url`` and ``camera_serials`` fields in
-``examples/embodiment/config/dosw1_collect_data.yaml`` to match your
-hardware before running.
+Edit the ``cluster.node_groups[<dosw1>].hardware.configs`` entry in
+``examples/embodiment/config/dosw1_collect_data.yaml`` (``robot_url``,
+the four gRPC ports and ``camera_serials``) to match your hardware
+before running.
 
 A typical collection loop:
 
@@ -511,7 +521,9 @@ Troubleshooting
 
   - The robot is powered and the follower/leader services are running
     (``sh ~/dos_w1/airbot/whole_start.sh``).
-  - ``robot_url`` and the four ports match the robot's configuration.
+  - ``robot_url`` and the four ports under
+    ``cluster.node_groups[<dosw1>].hardware.configs`` match the robot's
+    configuration.
   - The GPU node can ``ping`` the robot and TCP-connect on 50050–50053.
 
 **``RuntimeError: DOSW1SDKAdapter is not connected``**
@@ -520,7 +532,8 @@ Troubleshooting
 
 **No cameras / ``Camera ... is not producing frames``**
   Check ``rs-enumerate-devices`` on the robot node. Make sure every serial
-  in ``camera_serials`` is listed, and that the USB cables are seated.
+  listed under ``cluster.node_groups[<dosw1>].hardware.configs[*].camera_serials``
+  is visible, and that the USB cables are seated.
   If you are running on a headless server, set
   ``override_cfg.enable_camera_player: false`` to disable the preview
   window (training is unaffected).

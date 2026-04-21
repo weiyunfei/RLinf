@@ -29,7 +29,7 @@ import numpy as np
 from rlinf.envs.realworld.common.camera import BaseCamera, CameraInfo, create_camera
 from rlinf.envs.realworld.common.keyboard.keyboard_listener import KeyboardListener
 from rlinf.envs.realworld.common.video_player import VideoPlayer
-from rlinf.scheduler import WorkerInfo
+from rlinf.scheduler import DOSW1HWInfo, WorkerInfo
 from rlinf.utils.logging import get_logger
 
 from .dosw1_robot_state import DOSW1RobotState
@@ -123,7 +123,7 @@ class DOSW1Env(gym.Env):
         self,
         config: DOSW1Config,
         worker_info: Optional[WorkerInfo],
-        hardware_info,
+        hardware_info: Optional[DOSW1HWInfo],
         env_idx: int,
     ) -> None:
         self._logger = get_logger()
@@ -671,27 +671,23 @@ class DOSW1Env(gym.Env):
             serials.append(device.get_info(rs.camera_info.serial_number))
         return serials
 
-    def _apply_hardware_info(self, hardware_info) -> None:
+    def _apply_hardware_info(self, hardware_info: Optional[DOSW1HWInfo]) -> None:
         if hardware_info is None:
             return
-        config = getattr(hardware_info, "config", None)
-        if config is not None:
-            serials = getattr(config, "camera_serials", None)
-            if serials:
-                self.config.camera_serials = list(serials)
-            robot_url = getattr(config, "robot_url", None)
-            if robot_url and str(robot_url).strip():
-                self.config.robot_url = str(robot_url).strip()
-            for attr in (
-                "left_arm_port",
-                "right_arm_port",
-                "left_lead_port",
-                "right_lead_port",
-            ):
-                value = getattr(config, attr, None)
-                if value is not None:
-                    setattr(self.config, attr, int(value))
-        elif (
-            hasattr(hardware_info, "camera_serials") and not self.config.camera_serials
+        assert isinstance(hardware_info, DOSW1HWInfo), (
+            f"hardware_info must be DOSW1HWInfo, got {type(hardware_info)}."
+        )
+        hw = hardware_info.config
+        if hw.camera_serials:
+            self.config.camera_serials = list(hw.camera_serials)
+        if hw.robot_url and str(hw.robot_url).strip():
+            self.config.robot_url = str(hw.robot_url).strip()
+        for attr in (
+            "left_arm_port",
+            "right_arm_port",
+            "left_lead_port",
+            "right_lead_port",
         ):
-            self.config.camera_serials = list(hardware_info.camera_serials)
+            value = getattr(hw, attr, None)
+            if value is not None:
+                setattr(self.config, attr, int(value))
