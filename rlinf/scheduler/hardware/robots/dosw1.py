@@ -106,7 +106,7 @@ class DOSW1HWConfig(HardwareConfig):
     camera_serials: Optional[list[str]] = None
     """RealSense camera serial numbers used by the env."""
 
-    def __post_init__(self):
+    def __post_init__(self):  # noqa: D105
         assert isinstance(self.node_rank, int), (
             f"'node_rank' in DOSW1 config must be an integer. "
             f"But got {type(self.node_rank)}."
